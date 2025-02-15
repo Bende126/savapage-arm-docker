@@ -83,3 +83,5 @@ RUN /opt/savapage/MUST-RUN-AS-ROOT
 
 # Supervisor indítása alapértelmezett parancsként
 CMD ["/usr/bin/supervisord"]
+
+ENTRYPOINT ["/bin/bash", "-c"]
