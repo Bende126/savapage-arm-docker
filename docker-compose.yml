@@ -1,0 +1,23 @@
+version: "3.3"
+
+services:
+  savapage:
+    build: .
+    container_name: savapage
+    ports:
+      - "631:631"      # CUPS alapértelmezett port
+      - "8631:8631"    # SavaPage webes felület portja (példa)
+      - "8632:8632"    # Alternatív SavaPage port (példa)
+      - "9100:9100"    # Nyomtatási port, ha szükséges
+    volumes:
+      # A helyi config mappa tartalma elérhető a konténerben, ha módosítani szeretné a konfigurációkat
+      - ./config:/config
+      # Perzisztens tárolás a SavaPage adatok számára
+      - savapage_data:/opt/savapage
+      # Supervisor logok mentése
+      - supervisor_logs:/var/log/supervisor
+    restart: always
+
+volumes:
+  savapage_data:
+  supervisor_logs:
