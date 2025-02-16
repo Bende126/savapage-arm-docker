@@ -73,8 +73,6 @@ COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Alapértelmezett papírméret beállítása
 COPY config/papersize /etc/papersize
 
-RUN ls -a /opt/savapage/repos/savapage-make/target
-
 RUN cp /opt/savapage/repos/savapage-make/target/savapage-setup-1.5.0-final-linux-x64.bin /opt/savapage/ && \
     chmod +x /opt/savapage/savapage-setup-1.5.0-final-linux-x64.bin && \
     cd /opt/savapage && \
