@@ -3,7 +3,7 @@ FROM ubuntu:20.04
 
 # Szükséges környezeti változók beállítása
 ENV DEBIAN_FRONTEND=noninteractive
-ENV SAVA_VERSION=1.5.0-final
+ENV USER_LIMIT=10000
 
 # Rendszer frissítése és szükséges csomagok telepítése
 RUN apt-get update && \
@@ -15,6 +15,7 @@ RUN apt-get update && \
     imagemagick \
     wget \
     gnupg \
+    rng-tools \
     software-properties-common \
     avahi-daemon \
     avahi-discover \
@@ -22,11 +23,18 @@ RUN apt-get update && \
     binutils \
     cpio \
     openjdk-11-jdk \
+    maven \
+    g++ \
+    make \
+    pkg-config\
+    zip \
+    pgpgpg \
     supervisor \
     openssh-server \
     build-essential \
     git \
     libpam0g-dev \
+    libpcsclite-dev \
     libcups2-dev && \
     apt-get clean
 
@@ -34,6 +42,28 @@ RUN apt-get update && \
 RUN useradd -r -s /bin/bash -d /opt/savapage savapage && \
     mkdir -p /opt/savapage /var/log/supervisor /run/sshd && \
     chown savapage:savapage /opt/savapage
+
+RUN mkdir -p /opt/savapage/repos
+
+COPY ./init.sh /opt/savapage/repos/init.sh
+
+WORKDIR /opt/savapage/repos
+
+RUN /opt/savapage/repos/init.sh
+
+RUN cd /opt/savapage/repos/savapage-make && \
+    git checkout master && \
+    ./dev-git-all.sh "checkout master" && \
+    cd /opt/savapage && \
+    ./repos/savapage-make/dev-init.sh
+
+RUN rm /opt/savapage/repos/savapage-core/src/main/java/org/savapage/core/community/MemberCard.java
+
+COPY ./MemberCard.java /opt/savapage/repos/savapage-core/src/main/java/org/savapage/core/community/MemberCard.java
+
+#build
+RUN cd /opt/savapage/repos/savapage-make && \
+    ./build.sh all-x64
 
 # CUPS és Supervisor konfigurációs fájlok másolása
 COPY config/cupsd.conf /etc/cups/cupsd.conf
@@ -43,41 +73,12 @@ COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Alapértelmezett papírméret beállítása
 COPY config/papersize /etc/papersize
 
-# SavaPage telepítő letöltése és telepítése
-RUN cd /opt/savapage && \
-    wget https://www.savapage.org/download/installer/savapage-setup-${SAVA_VERSION}-linux-x64.bin -O savapage-setup-linux.bin && \
-    chmod +x savapage-setup-linux.bin && \
-    su savapage -c "./savapage-setup-linux.bin -e"
+RUN ls -a /opt/savapage/repos/savapage-make/target
 
-# xmlrpcpp könyvtár letöltése és fordítása
-RUN cd /opt && \
-    git clone https://gitlab.com/savapage/xmlrpcpp.git && \
-    cd xmlrpcpp && \
-    make && \
-    # Másolás a megfelelő helyekre
-    mkdir -p /usr/local/include/xmlrpcpp && \
-    cp libXmlRpc.a /usr/local/lib/
-
-# savapage-notifier, savapage-nss és savapage-pam forráskódjának letöltése és fordítása
-RUN cd /opt && \
-    git clone https://gitlab.com/savapage/savapage-cups-notifier.git && \
-    cd savapage-cups-notifier && \
-    make && \
-    cp target/savapage-notifier /opt/savapage/savapage/providers/cups/linux-x64/ && \
-    cd /opt && \
-    git clone https://gitlab.com/savapage/savapage-nss.git && \
-    cd savapage-nss && \
-    make && \
-    cp target/savapage-nss /opt/savapage/savapage/server/bin/linux-x64/ && \
-    cd /opt && \
-    git clone https://gitlab.com/savapage/savapage-pam.git && \
-    cd savapage-pam && \
-    make && \
-    cp target/savapage-pam /opt/savapage/savapage/server/bin/linux-x64/
-
-
-RUN cd /opt/savapage/savapage && \
-    su savapage -c "./install -n -d /opt/savapage"
+RUN cp /opt/savapage/repos/savapage-make/target/savapage-setup-1.5.0-final-linux-x64.bin /opt/savapage/ && \
+    chmod +x /opt/savapage/savapage-setup-1.5.0-final-linux-x64.bin && \
+    cd /opt/savapage && \
+    su savapage -c "./savapage-setup-1.5.0-final-linux-x64.bin -n"
 
 RUN /opt/savapage/MUST-RUN-AS-ROOT
 
